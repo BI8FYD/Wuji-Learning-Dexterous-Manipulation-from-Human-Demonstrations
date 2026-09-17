@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Demonstrations, checkpoints and run artefacts can be large or sensitive.
+data/
+outputs/
+*.npz
+*.onnx
+*.pt
