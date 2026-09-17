@@ -4,18 +4,13 @@ import json
 
 import numpy as np
 import pytest
+from wuji_mjlab.tasks.reorient.tooling.onnx_export_core import _build_config
 
-from wuji_learn_from_human.deployment import (
-  PolicyReferenceMetadata,
-  validate_policy_reference,
-)
-from wuji_learn_from_human.reference import (
+from wuji_lfh.tasks.human_demo_tracking.reference import (
   JOINT_NAMES_20,
   SCHEMA_VERSION,
   load_reference,
-  sha256_file,
 )
-from wuji_learn_from_human.residual import ResidualController
 
 
 def _write(path, *, names=JOINT_NAMES_20, frame="wuji_wrist_tag"):
@@ -58,21 +53,18 @@ def test_reference_rejects_joint_order_and_frame(tmp_path):
     load_reference(path)
 
 
-def test_policy_reference_pair_is_verified(tmp_path):
+def test_onnx_config_embeds_reference_contract(tmp_path):
   path = tmp_path / "demo.npz"
   _write(path)
-  reference = load_reference(path)
-  metadata = PolicyReferenceMetadata(
-    reference_sha256=sha256_file(path), reference_schema_version=SCHEMA_VERSION,
-    reference_joint_names=JOINT_NAMES_20, control_dt=0.05,
-    residual_scale=0.2, ema_alpha=0.5,
-  )
-  validate_policy_reference(metadata, reference)
-
-
-def test_residual_controller_filters_only_the_learned_correction():
-  controller = ResidualController(
-    np.full(20, -1.0), np.full(20, 1.0), residual_scale=0.2, ema_alpha=0.5
-  )
-  assert np.allclose(controller.step(np.zeros(20), np.ones(20)), 0.1)
-  assert np.allclose(controller.step(np.full(20, 0.5), np.zeros(20)), 0.55)
+  config = _build_config("unused", {
+    "actions": {"joint_pos": {"residual_scale": 0.2, "ema_alpha": 0.5}},
+    "commands": {"demo_trajectory": {
+      "reference_path": str(path), "lookahead_frames": [0, 4],
+    }},
+    "decimation": 5,
+    "sim": {"timestep": 0.01},
+  })
+  assert config["control_mode"] == "reference_residual"
+  assert config["reference_schema_version"] == SCHEMA_VERSION
+  assert config["reference_sha256"]
+  assert config["reference_joint_names"] == list(JOINT_NAMES_20)

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,42 +10,36 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 authors = [{ name = "Wuji Technology Co., Ltd.", email = "support@wuji.tech" }]
-keywords = ["dexterous-manipulation", "human-demonstrations", "ik-retargeting", "reinforcement-learning", "sim-to-real", "wujihand"]
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: Apache Software License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence",
-  "Topic :: Scientific/Engineering :: Robotics",
-]
-dependencies = ["numpy>=1.26", "scipy>=1.12"]
+dependencies = ["wuji-mjlab>=0.1.0", "numpy>=1.26", "scipy>=1.12", "PyYAML>=6"]
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
+retarget = ["wuji-retargeting>=2026.8.17", "smplx>=0.1.28", "chumpy>=0.70"]
 
-[project.scripts]
-wuji-export-reference = "wuji_learn_from_human.retargeting.cli:main"
-
-[project.urls]
-Homepage = "https://github.com/wuji-technology/wuji-learn-from-human"
-Repository = "https://github.com/wuji-technology/wuji-learn-from-human"
-Issues = "https://github.com/wuji-technology/wuji-learn-from-human/issues"
+[project.entry-points."mjlab.tasks"]
+wuji_lfh = "wuji_lfh.tasks"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["wuji_lfh*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ruff]
-line-length = 88
-src = ["src", "tests"]
+indent-width = 2
+src = ["src", "scripts", "tests"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Preserve the copied preprocessing/IK behavior; its array lengths are checked
+# explicitly, and MANO compatibility aliases must precede the smplx import.
+"src/wuji_lfh/retargeting/*.py" = ["B905"]
+"src/wuji_lfh/retargeting/dexterhand.py" = ["E402", "B905"]

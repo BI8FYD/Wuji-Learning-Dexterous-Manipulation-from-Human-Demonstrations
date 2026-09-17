@@ -1,0 +1,23 @@
+hand: right
+definition: MJCF qpos0 clipped to position-actuator control limits
+joints:
+  right_finger1_joint1: 0.0475
+  right_finger1_joint2: 0.0
+  right_finger1_joint3: 0.0
+  right_finger1_joint4: 0.0
+  right_finger2_joint1: 0.0
+  right_finger2_joint2: 0.0
+  right_finger2_joint3: 0.0
+  right_finger2_joint4: 0.0
+  right_finger3_joint1: 0.0
+  right_finger3_joint2: 0.0
+  right_finger3_joint3: 0.0
+  right_finger3_joint4: 0.0
+  right_finger4_joint1: 0.0
+  right_finger4_joint2: 0.0
+  right_finger4_joint3: 0.0
+  right_finger4_joint4: 0.0
+  right_finger5_joint1: 0.0
+  right_finger5_joint2: 0.0
+  right_finger5_joint3: 0.0
+  right_finger5_joint4: 0.0

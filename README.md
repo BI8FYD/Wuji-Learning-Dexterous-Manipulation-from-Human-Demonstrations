@@ -1,140 +1,90 @@
 # Wuji: Learning Dexterous Manipulation from Human Demonstrations
 
-Learning dexterous manipulation policies for WujiHand from human demonstrations
+Learning in-hand manipulation policies for WujiHand from human demonstrations
 via IK retargeting and residual reinforcement learning.
 
-```text
-              Human Demo
-                  ↓
-           IK Retargeting
-                  ↓
-         Reference Motion
-                  ↓
-            Residual RL
-                  ↓
-              WujiHand
-```
+**Human Demo → IK Retargeting → Reference Motion → Residual RL → Sim2Real WujiHand**
 
-> **Demo GIF / Video:** coming soon.
+- **IK retargeting:** map human hand motion to WujiHand joint references.
+- **Residual RL:** learn bounded corrections around the reference motion to
+  account for contact dynamics and physical constraints.
+- **Simulation / deployment:** train and evaluate in simulation, then run the
+  exported policy on WujiHand through the existing sim-to-real bridge.
 
-`wuji-learn-from-human` is the standalone reference and control contract for
-this pipeline. It turns a human demonstration plus its IK solution into an
-immutable, calibrated trajectory; trains a residual policy around that motion
-in a simulator; and verifies that the policy, reference, observation pipeline,
-and physical WujiHand run at the same control contract.
+Get started with [Quick Start](#quick-start).
 
-## Why residual RL?
+[ Demo GIF / Video — coming soon ]
 
-IK retargeting gives the hand a meaningful motion prior but not a reliable
-contact policy: geometry, contact dynamics, calibration error, and perception
-noise remain. The policy therefore produces only a bounded joint correction:
+## Quick Start
 
-```text
-q_target(t) = q_ref(t) + EMA(residual_scale × clip(policy(obs_t), -1, 1))
-```
+### Installation
 
-The exponential moving average is applied to the learned correction only. A
-zero-action policy tracks `q_ref` without introducing reference lag.
-
-## Pipeline
-
-1. **Human in-hand demonstration** — capture synchronised hand landmarks and
-   object position/orientation.
-2. **IK retargeting** — solve the 20 WujiHand joint angles `q_ik` in the
-   canonical encoder order.
-3. **Reference motion** — export a rate-limited, resampled, wrist-tag-frame
-   `.npz` reference with provenance hashes and valid reset frames.
-4. **Residual RL** — use the reference as the nominal action and train a
-   bounded correction in simulation. The actor should contain only signals
-   available on the robot: encoders, reference phase, reference joints, and
-   calibrated object pose.
-5. **Sim2Real WujiHand** — export the policy with reference hash, joint order,
-   control period, residual scale, and filter parameters. Check these fields
-   before sending a command to hardware.
-
-The wrist-marker calibration is an input to the reference artifact, not an RL
-parameter. Re-measure it for each robot/camera installation.
-
-## Install
+Requirements: Linux x86_64, an NVIDIA GPU, and [pixi](https://pixi.sh).
+Keep working `wuji-mjlab` and `WrenchRetarget` checkouts alongside this repository,
+with WrenchRetarget's `external/wuji-retargeting` submodule initialized.
 
 ```bash
-git clone https://github.com/wuji-technology/wuji-learn-from-human.git
+git clone https://github.com/BI8FYD/Wuji-Learning-In-hand-Manipulation-from-Human-Demonstrations.git wuji-learn-from-human
 cd wuji-learn-from-human
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[test]'
-pytest
+pixi install
 ```
 
-## Export a reference motion
+### Retarget → Train → Play
 
-The input is an IK run directory containing `q_ik.npz`, `run.json`, the
-synchronised source motion, and the retargeting landmark output specified by
-the manifest. `q_ik.npz` must contain `q_ik`, `fps`, and the canonical
-20-joint `joint_names` array.
+Place the DexterHand Cuboid 02 recording at `dataset/Cuboid_02/source.npz` and
+your licensed MANO models under `dataset/models/MANO/`. See
+[the dataset format](dataset/README.md). Adjust the time interval to your recording.
 
 ```bash
-wuji-export-reference \
-  --ik-run /path/to/ik-run \
-  --output data/reference_v1.npz \
-  --control-dt 0.05 \
-  --lowpass-hz 8
+# Retarget the human demonstration and generate the WujiHand reference.
+pixi run -e retarget python scripts/retarget/ik_retarget.py \
+  --input dataset/Cuboid_02/source.npz \
+  --start 95 --stop 115 \
+  --mano-model dataset/models/MANO \
+  --output-dir outputs/Cuboid_02
+
+# Train the residual policy.
+pixi run train \
+  --reference outputs/Cuboid_02/reference.npz \
+  --agent.logger tensorboard --agent.upload-model False
+
+# Replay a trained checkpoint in simulation.
+pixi run play \
+  --reference outputs/Cuboid_02/reference.npz \
+  --checkpoint-file <path-to-checkpoint.pt>
 ```
 
-The exporter validates joint order, transforms the object trajectory into the
-calibrated `wuji_wrist_tag` frame, applies zero-phase anti-alias filtering,
-resamples joint position/object pose, computes velocities, and records hashes
-for every source input. The reference format is deliberately simulator
-independent.
+### Sim2Real
 
-## Use the residual controller
+After hardware and camera calibration, export the checkpoint and start playback:
 
-```python
-import numpy as np
-
-from wuji_learn_from_human.residual import ResidualController
-
-controller = ResidualController(
-    lower_limits=np.full(20, -1.0),
-    upper_limits=np.full(20, 1.0),
-    residual_scale=0.2,
-    ema_alpha=0.5,
-)
-joint_target = controller.step(q_ref_at_t, policy_action)
+```bash
+pixi run python scripts/export_onnx.py <path-to-checkpoint.pt>
+pixi run -e deploy vision
+pixi run -e deploy play-real \
+  --reference outputs/Cuboid_02/reference.npz --ckpt <path-to-policy.onnx>
 ```
 
-At deployment, load the reference with `load_reference()` and call
-`validate_policy_reference()` against metadata exported with the policy. See
-[the integration contract](docs/INTEGRATION.md) for the expected simulator and
-WujiHand adapter responsibilities.
+Run vision in a separate terminal. See the
+[wuji-mjlab deployment guide](https://docs.wuji.tech/docs/en/wuji-mjlab/latest/sim2real/)
+for hardware setup. Add `--mock-hand` for the hardware-free driver.
 
-## Reference schema
+## Human Demonstrations
 
-The `wuji-human-demo-v1` archive includes:
+The human demonstration comes from **DexterHand Cuboid 02**. The selected hand
+and object motion is retargeted using the working WrenchRetarget IK implementation
+to produce synchronized WujiHand reference trajectories. Dataset files and
+licensed MANO models are not bundled.
 
-| Field | Meaning |
-| --- | --- |
-| `q_ref`, `q_ref_velocity` | 20-D WujiHand joint reference and velocity |
-| `object_position`, `object_quaternion_wxyz` | Object pose in `wuji_wrist_tag` |
-| `object_linear_velocity`, `object_angular_velocity` | Object velocity in the tag frame |
-| `valid_reset_mask` | Reference phases allowed for random simulated resets |
-| `dt`, `joint_names`, `object_size_m` | Timing, actuation order, and simulated object dimensions |
-| calibration and source hashes | Deployment-frame alignment and provenance |
+## Training Environment
 
-Large demonstrations, checkpoints, policy exports, and videos are ignored by
-default. Publish a short demo GIF at `docs/assets/demo.gif` or link a video in
-this README when results are ready.
-
-## Safety notes
-
-- Validate open-loop reference replay in simulation before any learned policy.
-- Start with a hardware-free driver or digital twin, then confirm calibration
-  and fresh object-pose observations before enabling torque/position commands.
-- Stop safely when perception becomes stale or reference/policy metadata does
-  not match exactly.
-- This repository does not replace joint limits, collision checks, watchdogs,
-  emergency stop procedures, or the WujiHand hardware safety manual.
+The training environment is based on
+[wuji-mjlab](https://github.com/wuji-technology/wuji-mjlab), reusing its WujiHand
+assets, mjlab/MuJoCo-Warp simulation, PPO backend, and deployment infrastructure.
+This repository adds the demonstration-tracking task, IK-to-reference pipeline,
+and residual control while preserving the existing RL workflow. The default task
+is `WujiHand_HumanDemoTracking`; base training/play overrides remain supported.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+Apache-2.0. Dataset, MANO, and upstream dependencies retain their own licenses.

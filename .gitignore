@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.pixi/
+logs/
 build/
 dist/
 *.egg-info/
@@ -11,5 +13,6 @@ dist/
 data/
 outputs/
 *.npz
+*.pkl
 *.onnx
 *.pt

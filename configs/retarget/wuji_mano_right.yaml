@@ -1,0 +1,46 @@
+# Native MANO -> Wuji Hand adaptive retargeting.
+# The [21,3] layout is MediaPipe-compatible, but points are metric MANO joints
+# and fixed MANO fingertip vertices for directions/pinch. Position-only tip
+# targets use 90% of the distal-axis joint-to-mesh-exit distance instead.
+optimizer:
+  type: "AdaptiveOptimizerAnalytical"
+  hand_side: "right"
+
+retarget:
+  backend: wuji_mano
+  neutral_pose: robot_neutral_right.yaml
+
+  # Pinned upstream adaptive optimizer parameters.  ``scaling`` and
+  # ``segment_scaling`` are resolved at runtime from MANO/Wuji neutral geometry;
+  # YAML values are deliberately not source calibration constants.
+  huber_delta: 2.0
+  huber_delta_dir: 0.5
+  norm_delta: 0.04
+  w_pos: 1.0
+  w_dir: 2.0
+  w_full_hand: 1.0
+  thumb_skip_pip: false
+  w_hyper: 1.0
+  soft_min: 0.0
+  w_couple: 0.0
+  couple_ratio: 0.7
+  lp_alpha: 1.0
+
+  pinch_thresholds:
+    index:  {d1: 2.0, d2: 4.0}
+    middle: {d1: 2.0, d2: 4.0}
+    ring:   {d1: 2.0, d2: 4.0}
+    pinky:  {d1: 2.0, d2: 4.0}
+
+  # One source-independent coordinate adaptation; begin at identity and tune
+  # only through the A/B protocol, never by MediaPipe camera compensation.
+  mediapipe_rotation: {x: 0.0, y: 0.0, z: 0.0}
+  wrist_offset_cm: [0.0, 0.0, 0.0]
+  thumb_offset_cm: [0.0, 0.0, 0.0]
+
+  morphology_mode: identity
+  four_finger_projection: false
+  wrist_frame: wuji_point_estimate_v1
+  video_z_scale: false
+  wrist_middle_normalization: false
+  correct_segments: false

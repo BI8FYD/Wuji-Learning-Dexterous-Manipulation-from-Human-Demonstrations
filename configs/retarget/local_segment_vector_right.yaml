@@ -1,0 +1,43 @@
+# Right WujiHand Minimal Kinematic Retargeting configuration.
+optimizer:
+  type: "MechanicalNeutralVectorOptimizer"
+  hand_side: "right"
+
+retarget:
+  backend: current_direction
+  neutral_pose: robot_neutral_right.yaml
+  lambda_direction: 1.0
+  lambda_tip: 0.10
+  lambda_continuity: 0.02
+  tip_reference_length_m: 0.09
+  continuity_reference_rad: 0.10
+  tip_scalings: [1.0, 1.0, 1.0, 1.0, 1.0]
+  segment_weights: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+  key_vectors:
+    - {origin: finger1_link1, task: finger1_link3,    origin_kp: 1, task_kp: 2}
+    - {origin: finger1_link3, task: finger1_link4,    origin_kp: 2, task_kp: 3}
+    - {origin: finger1_link4, task: finger1_tip_link, origin_kp: 3, task_kp: 4}
+    - {origin: finger2_link1, task: finger2_link3,    origin_kp: 5, task_kp: 6}
+    - {origin: finger2_link3, task: finger2_link4,    origin_kp: 6, task_kp: 7}
+    - {origin: finger2_link4, task: finger2_tip_link, origin_kp: 7, task_kp: 8}
+    - {origin: finger3_link1, task: finger3_link3,    origin_kp: 9,  task_kp: 10}
+    - {origin: finger3_link3, task: finger3_link4,    origin_kp: 10, task_kp: 11}
+    - {origin: finger3_link4, task: finger3_tip_link, origin_kp: 11, task_kp: 12}
+    - {origin: finger4_link1, task: finger4_link3,    origin_kp: 13, task_kp: 14}
+    - {origin: finger4_link3, task: finger4_link4,    origin_kp: 14, task_kp: 15}
+    - {origin: finger4_link4, task: finger4_tip_link, origin_kp: 15, task_kp: 16}
+    - {origin: finger5_link1, task: finger5_link3,    origin_kp: 17, task_kp: 18}
+    - {origin: finger5_link3, task: finger5_link4,    origin_kp: 18, task_kp: 19}
+    - {origin: finger5_link4, task: finger5_tip_link, origin_kp: 19, task_kp: 20}
+
+  mediapipe_rotation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+
+render:
+  camera:
+    azimuth: 225
+    elevation: -20
+    distance: 0.5

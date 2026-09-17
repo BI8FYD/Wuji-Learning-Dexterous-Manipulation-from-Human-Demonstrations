@@ -1,0 +1,74 @@
+[workspace]
+name = "wuji-learn-from-human"
+version = "0.1.0"
+description = "Human demonstrations, IK retargeting and residual RL for WujiHand."
+license = "Apache-2.0"
+channels = ["https://prefix.dev/conda-forge", "nvidia"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.11.*"
+pytest = ">=9.0"
+ruff = ">=0.6,<1"
+pre-commit = ">=3.6"
+libstdcxx-ng = ">=15.2.0,<16"
+
+[pypi-options]
+index-strategy = "unsafe-best-match"
+# PyTorch official CUDA 12.8 wheels (supports Blackwell sm_120 / RTX 50 series).
+# CPU-only users / non-NVIDIA users can remove this line and pip will fall
+# back to the platform-default torch wheel from pypi.org.
+extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+
+[pypi-options.dependency-overrides]
+rsl-rl-lib = { path = "../wuji-mjlab/src/wuji_rl_libs/rsl_rl", editable = true }
+
+[pypi-dependencies]
+wuji-mjlab = { path = "../wuji-mjlab", editable = true }
+wuji-learn-from-human = { path = ".", editable = true }
+mjlab = { version = "==1.3.0", extras = ["cu128"] }
+rsl-rl-lib = { path = "../wuji-mjlab/src/wuji_rl_libs/rsl_rl", editable = true }
+gym = "==0.26.2"
+omegaconf = ">=2.3.0"
+tensorboardX = ">=2.6.2"
+onnxruntime = ">=1.24.4, <2"
+torch = ">=2.7.0,<2.8"
+warp-lang = ">=1.12,<1.13"
+scipy = ">=1.15,<2"
+# pin <2: trimesh mesh.show() incompatible with pyglet 2.x (as of trimesh 4.12)
+pyglet = ">=1.5,<2"
+
+[tasks]
+train = { cmd = "python scripts/train.py", description = "Train a task with rsl_rl (append --task and overrides)" }
+play = { cmd = "python scripts/play.py", description = "Play/infer from rsl_rl checkpoint" }
+
+# ─────────────────────── Deploy / Real-hand ───────────────────────
+
+[environments]
+default = { solve-group = "default" }
+deploy  = { features = ["deploy"], solve-group = "default" }
+retarget = { features = ["retarget"], solve-group = "default" }
+
+[feature.deploy.pypi-dependencies]
+opencv-contrib-python = ">=4.13,<5"
+pupil-apriltags = ">=1.0"
+pyzmq = ">=27.0"
+glfw = ">=2.10"
+wujihandpy = "==1.5.1"
+pyyaml = ">=6.0"
+pyrealsense2 = ">=2.56,<3"
+
+[feature.deploy.tasks]
+vision    = { cmd = "python ../wuji-mjlab/deploy/reorient/scripts/cube_world_observer.py --preview", description = "Launch ArUco/AprilTag cube observer with OpenCV preview window (publishes cube pose on ZMQ:5555)" }
+play-real = { cmd = "python scripts/play.py --real", description = "Run sim2real control with MuJoCo mirror viewer (pass --ckpt PATH for a non-default policy)" }
+
+
+[feature.retarget.pypi-dependencies]
+# Reuse the pinned official optimizer checkout already used by WrenchRetarget.
+wuji-retargeting = { path = "../WrenchRetarget/external/wuji-retargeting", editable = true }
+smplx = ">=0.1.28"
+chumpy = ">=0.70"
+pyyaml = ">=6.0"
+
+[feature.retarget.tasks]
+ik-retarget = { cmd = "python scripts/retarget/ik_retarget.py", description = "DexterHand -> IK -> WujiHand reference trajectory" }

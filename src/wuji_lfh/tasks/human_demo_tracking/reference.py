@@ -1,4 +1,4 @@
-"""Versioned, simulator-independent reference trajectory contract."""
+"""Versioned, dependency-light reference trajectory contract for DemoTrack."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-SCHEMA_VERSION = "wuji-human-demo-v1"
+SCHEMA_VERSION = "wuji-demo-track-v1"
 JOINT_NAMES_20 = tuple(
   f"right_finger{finger}_joint{joint}"
   for finger in range(1, 6)
@@ -19,8 +19,6 @@ JOINT_NAMES_20 = tuple(
 
 @dataclass(frozen=True)
 class ReferenceTrajectory:
-  """An immutable, time-synchronised IK and object-motion trajectory."""
-
   q: np.ndarray
   qd: np.ndarray
   object_position: np.ndarray
@@ -44,16 +42,15 @@ class ReferenceTrajectory:
     return int(self.q.shape[0])
 
 
-def sha256_file(path: str | Path) -> str:
-  """Return the SHA-256 of a file without loading it entirely into memory."""
+def sha256_file(path: Path) -> str:
   digest = hashlib.sha256()
-  with Path(path).open("rb") as stream:
+  with path.open("rb") as stream:
     for block in iter(lambda: stream.read(1024 * 1024), b""):
       digest.update(block)
   return digest.hexdigest()
 
 
-def _scalar(archive: np.lib.npyio.NpzFile, key: str):
+def _scalar(archive, key: str):
   value = archive[key]
   if value.shape != ():
     raise ValueError(f"{key} must be a scalar, got {value.shape}")
@@ -61,10 +58,10 @@ def _scalar(archive: np.lib.npyio.NpzFile, key: str):
 
 
 def load_reference(path: str | Path) -> ReferenceTrajectory:
-  """Load and fail-closed validate one immutable human-demonstration archive."""
+  """Load and fail-closed validate one immutable DemoTrack archive."""
   resolved = Path(path).expanduser().resolve()
   if not resolved.is_file():
-    raise FileNotFoundError(f"reference trajectory not found: {resolved}")
+    raise FileNotFoundError(f"DemoTrack reference not found: {resolved}")
   with np.load(resolved, allow_pickle=False) as archive:
     required = {
       "schema_version", "demo_id", "q_ref", "q_ref_velocity", "joint_names",
@@ -91,7 +88,7 @@ def load_reference(path: str | Path) -> ReferenceTrajectory:
     dt = float(_scalar(archive, "dt"))
     demo_id = str(_scalar(archive, "demo_id"))
     object_frame = str(_scalar(archive, "object_frame"))
-    convention = str(_scalar(archive, "quaternion_convention"))
+    quaternion_convention = str(_scalar(archive, "quaternion_convention"))
     robot_to_tag_position = np.asarray(
       archive["robot_to_tag_position_m"], dtype=np.float32
     )
@@ -103,7 +100,7 @@ def load_reference(path: str | Path) -> ReferenceTrajectory:
   if q.ndim != 2 or q.shape[1] != 20 or q.shape[0] < 2:
     raise ValueError(f"q_ref must be [T,20], T>=2; got {q.shape}")
   count = q.shape[0]
-  expected = {
+  values = {
     "q_ref_velocity": (qd, (count, 20)),
     "object_position": (position, (count, 3)),
     "object_quaternion_wxyz": (quaternion, (count, 4)),
@@ -111,11 +108,11 @@ def load_reference(path: str | Path) -> ReferenceTrajectory:
     "object_angular_velocity": (angular_velocity, (count, 3)),
     "valid_reset_mask": (valid_reset, (count,)),
   }
-  for name, (value, shape) in expected.items():
+  for name, (value, shape) in values.items():
     if value.shape != shape:
       raise ValueError(f"{name} must be {shape}, got {value.shape}")
   if names != JOINT_NAMES_20:
-    raise ValueError(f"joint_names must match the WujiHand encoder order; got {names}")
+    raise ValueError(f"joint_names must exactly match Wuji encoder order; got {names}")
   if not np.isfinite(dt) or dt <= 0.0:
     raise ValueError("dt must be positive and finite")
   if size.shape != (3,) or np.any(size <= 0.0) or not np.isfinite(size).all():
@@ -128,25 +125,28 @@ def load_reference(path: str | Path) -> ReferenceTrajectory:
   if not valid_reset.any():
     raise ValueError("valid_reset_mask contains no usable frames")
   if object_frame != "wuji_wrist_tag":
-    raise ValueError("object_frame must be 'wuji_wrist_tag'")
-  if convention != "wxyz":
+    raise ValueError(f"MVP requires object_frame='wuji_wrist_tag', got {object_frame!r}")
+  if quaternion_convention != "wxyz":
     raise ValueError("quaternion_convention must be 'wxyz'")
-  if robot_to_tag_position.shape != (3,) or not np.isfinite(robot_to_tag_position).all():
+  if robot_to_tag_position.shape != (3,) or not np.isfinite(
+    robot_to_tag_position
+  ).all():
     raise ValueError("robot_to_tag_position_m must be finite [3]")
   if robot_to_tag_quaternion.shape != (4,) or not np.allclose(
     np.linalg.norm(robot_to_tag_quaternion), 1.0, atol=1e-4
   ):
     raise ValueError("robot_to_tag_quaternion_wxyz must be normalized [4]")
-  for value in (*arrays, valid_reset, size, robot_to_tag_position, robot_to_tag_quaternion):
+  for value in (
+    *arrays, valid_reset, size, robot_to_tag_position, robot_to_tag_quaternion
+  ):
     value.setflags(write=False)
   return ReferenceTrajectory(
-    q=q, qd=qd, object_position=position,
-    object_quaternion_wxyz=quaternion,
-    object_linear_velocity=linear_velocity,
-    object_angular_velocity=angular_velocity, valid_reset_mask=valid_reset,
-    dt=dt, joint_names=names, object_size_m=size, demo_id=demo_id,
-    object_frame=object_frame, quaternion_convention=convention,
+    q=q, qd=qd, object_position=position, object_quaternion_wxyz=quaternion,
+    object_linear_velocity=linear_velocity, object_angular_velocity=angular_velocity,
+    valid_reset_mask=valid_reset, dt=dt, joint_names=names, object_size_m=size,
+    demo_id=demo_id, object_frame=object_frame, source_hashes=source_hashes,
+    quaternion_convention=quaternion_convention,
     robot_to_tag_position_m=robot_to_tag_position,
     robot_to_tag_quaternion_wxyz=robot_to_tag_quaternion,
-    source_hashes=source_hashes, path=resolved,
+    path=resolved,
   )
