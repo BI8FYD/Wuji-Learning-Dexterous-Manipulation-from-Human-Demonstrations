@@ -13,6 +13,17 @@ via IK retargeting and residual reinforcement learning.
 
 Get started with [Quick Start](#quick-start).
 
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Human Demonstration</strong><br><img src="docs/assets/demos/human_demonstration.gif" alt="Human demonstration" width="100%"></td>
+    <td width="50%" align="center"><strong>IK Retargeting</strong><br><img src="docs/assets/demos/ik_retargeting.gif" alt="IK retargeting" width="100%"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><strong>Policy Simulation</strong><br><img src="docs/assets/demos/policy_simulation.gif" alt="Policy simulation" width="100%"></td>
+    <td width="50%" align="center"><strong>Sim2Real</strong><br><img src="docs/assets/demos/sim2real.gif" alt="Sim2Real WujiHand demonstration" width="100%"></td>
+  </tr>
+</table>
+
 ## Quick Start
 
 ### Installation
