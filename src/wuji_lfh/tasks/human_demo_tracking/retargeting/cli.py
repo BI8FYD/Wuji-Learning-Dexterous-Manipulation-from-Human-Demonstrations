@@ -1,4 +1,4 @@
-"""Export a WrenchRetarget q_ik run as a DemoTrack reference."""
+"""Export a IK q_ik run as a DemoTrack reference."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 
 from wuji_lfh.calibration import TAG_IN_PALM_POS, TAG_IN_PALM_QUAT_WXYZ
 
-from .exporter import export_wrench_run
+from .exporter import export_ik_run
 
 
 def main() -> None:
@@ -23,7 +23,7 @@ def main() -> None:
     default=TAG_IN_PALM_QUAT_WXYZ,
   )
   args = parser.parse_args()
-  result = export_wrench_run(
+  result = export_ik_run(
     args.run_dir, args.output, control_dt=args.control_dt, lowpass_hz=args.lowpass_hz,
     robot_to_tag_position_m=args.robot_to_tag_position,
     robot_to_tag_quaternion_wxyz=args.robot_to_tag_quaternion_wxyz,

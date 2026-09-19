@@ -13,15 +13,14 @@ via IK retargeting and residual reinforcement learning.
 
 Get started with [Quick Start](#quick-start).
 
-[ Demo GIF / Video — coming soon ]
-
 ## Quick Start
 
 ### Installation
 
 Requirements: Linux x86_64, an NVIDIA GPU, and [pixi](https://pixi.sh).
-Keep working `wuji-mjlab` and `WrenchRetarget` checkouts alongside this repository,
-with WrenchRetarget's `external/wuji-retargeting` submodule initialized.
+Keep a working `wuji-mjlab` checkout alongside this repository.
+The retargeting implementation and kinematic models are bundled here;
+no separate retargeting project is required.
 
 ```bash
 git clone https://github.com/BI8FYD/Wuji-Learning-In-hand-Manipulation-from-Human-Demonstrations.git wuji-learn-from-human
@@ -31,16 +30,16 @@ pixi install
 
 ### Retarget → Train → Play
 
-Place the DexterHand Cuboid 02 recording at `dataset/Cuboid_02/source.npz` and
-your licensed MANO models under `dataset/models/MANO/`. See
+Place the DexterHand Cuboid 02 recording at `dataset/Cuboid_02-fps_60-right.npz` and
+your licensed MANO models under `dataset/MANO models/`. See
 [the dataset format](dataset/README.md). Adjust the time interval to your recording.
 
 ```bash
 # Retarget the human demonstration and generate the WujiHand reference.
 pixi run -e retarget python scripts/retarget/ik_retarget.py \
-  --input dataset/Cuboid_02/source.npz \
+  --input dataset/Cuboid_02-fps_60-right.npz \
   --start 95 --stop 115 \
-  --mano-model dataset/models/MANO \
+  --mano-model "dataset/MANO models/" \
   --output-dir outputs/Cuboid_02
 
 # Train the residual policy.
@@ -69,22 +68,8 @@ Run vision in a separate terminal. See the
 [wuji-mjlab deployment guide](https://docs.wuji.tech/docs/en/wuji-mjlab/latest/sim2real/)
 for hardware setup. Add `--mock-hand` for the hardware-free driver.
 
-## Human Demonstrations
-
-The human demonstration comes from **DexterHand Cuboid 02**. The selected hand
-and object motion is retargeted using the working WrenchRetarget IK implementation
-to produce synchronized WujiHand reference trajectories. Dataset files and
-licensed MANO models are not bundled.
-
-## Training Environment
-
-The training environment is based on
-[wuji-mjlab](https://github.com/wuji-technology/wuji-mjlab), reusing its WujiHand
-assets, mjlab/MuJoCo-Warp simulation, PPO backend, and deployment infrastructure.
-This repository adds the demonstration-tracking task, IK-to-reference pipeline,
-and residual control while preserving the existing RL workflow. The default task
-is `WujiHand_HumanDemoTracking`; base training/play overrides remain supported.
-
 ## License
 
-Apache-2.0. Dataset, MANO, and upstream dependencies retain their own licenses.
+Apache-2.0. Bundled retargeting code and kinematic models retain their MIT
+licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+Dataset, MANO, and upstream dependencies retain their own licenses.

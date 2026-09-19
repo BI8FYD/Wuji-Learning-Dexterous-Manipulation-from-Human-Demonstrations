@@ -31,6 +31,8 @@ rsl-rl-lib = { path = "../wuji-mjlab/src/wuji_rl_libs/rsl_rl", editable = true }
 gym = "==0.26.2"
 omegaconf = ">=2.3.0"
 tensorboardX = ">=2.6.2"
+gitpython = ">=3.1"
+tensorboard = ">=2.14"
 onnxruntime = ">=1.24.4, <2"
 torch = ">=2.7.0,<2.8"
 warp-lang = ">=1.12,<1.13"
@@ -63,11 +65,14 @@ vision    = { cmd = "python ../wuji-mjlab/deploy/reorient/scripts/cube_world_obs
 play-real = { cmd = "python scripts/play.py --real", description = "Run sim2real control with MuJoCo mirror viewer (pass --ckpt PATH for a non-default policy)" }
 
 
+[feature.retarget.dependencies]
+pinocchio = ">=3.8,<4"
+nlopt = ">=2.7,<3"
+# Use the packaged legacy MANO-pickle dependency, avoiding its broken pip build.
+chumpy = "==0.70"
+
 [feature.retarget.pypi-dependencies]
-# Reuse the pinned official optimizer checkout already used by WrenchRetarget.
-wuji-retargeting = { path = "../WrenchRetarget/external/wuji-retargeting", editable = true }
 smplx = ">=0.1.28"
-chumpy = ">=0.70"
 pyyaml = ">=6.0"
 
 [feature.retarget.tasks]

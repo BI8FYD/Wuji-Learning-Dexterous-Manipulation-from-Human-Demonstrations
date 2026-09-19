@@ -30,7 +30,9 @@ class PinCompatibleAdaptiveOptimizer:
     """Factory for an official optimizer with a Pinocchio 2.x index shim."""
 
     def __new__(cls, config: dict):
-        from wuji_retargeting.opt.adaptive_analytical import AdaptiveOptimizerAnalytical
+        from wuji_lfh._vendor.wuji_retargeting.opt.adaptive_analytical import (
+            AdaptiveOptimizerAnalytical,
+        )
 
         class _Implementation(AdaptiveOptimizerAnalytical):
             position_tip_keypoints = None
@@ -137,7 +139,9 @@ class WujiManoBackend:
 
     def transform(self, raw_keypoints_m: np.ndarray) -> np.ndarray:
         """Run only upstream wrist-frame construction plus explicit zero-safe offsets."""
-        from wuji_retargeting.mediapipe import apply_mediapipe_transformations
+        from wuji_lfh._vendor.wuji_retargeting.mediapipe import (
+            apply_mediapipe_transformations,
+        )
 
         points = validate_mano_keypoints(raw_keypoints_m, label="native MANO keypoints")
         if points.ndim != 2:

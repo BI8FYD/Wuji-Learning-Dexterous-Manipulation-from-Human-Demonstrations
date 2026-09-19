@@ -1,1 +1,1 @@
-"""Dataset adapters for the WrenchRetarget baseline."""
+"""Human demonstration adapters and IK retargeting."""

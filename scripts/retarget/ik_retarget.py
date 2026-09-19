@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DexterHand -> existing WrenchRetarget IK -> WujiHand RL reference."""
+"""DexterHand -> bundled IK retargeting -> WujiHand RL reference."""
 
 from __future__ import annotations
 

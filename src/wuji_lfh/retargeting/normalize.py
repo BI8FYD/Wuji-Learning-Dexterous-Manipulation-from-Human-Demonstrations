@@ -17,7 +17,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_INPUT = ROOT / "outputs" / "retarget" / "Cuboid_00-right.pkl"
 
-# Exact values from external/wuji-retargeting's video_mediapipe.py, in metres.
+# Exact values from upstream wuji-retargeting's video_mediapipe.py, in metres.
 # Each tuple is [MCP->PIP, PIP->DIP, DIP->TIP].
 REFERENCE_SEGMENT_LENGTHS = {
     "thumb": (0.0505, 0.0318, 0.0302),

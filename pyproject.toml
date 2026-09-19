@@ -14,7 +14,7 @@ dependencies = ["wuji-mjlab>=0.1.0", "numpy>=1.26", "scipy>=1.12", "PyYAML>=6"]
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
-retarget = ["wuji-retargeting>=2026.8.17", "smplx>=0.1.28", "chumpy>=0.70"]
+retarget = ["pin>=3.8,<4", "nlopt>=2.7,<3", "smplx>=0.1.28", "chumpy>=0.70"]
 
 [project.entry-points."mjlab.tasks"]
 wuji_lfh = "wuji_lfh.tasks"
@@ -26,6 +26,11 @@ package-dir = {"" = "src"}
 where = ["src"]
 include = ["wuji_lfh*"]
 
+[tool.setuptools.package-data]
+"wuji_lfh._vendor.wuji_retargeting" = [
+  "LICENSE", "wuji-description/LICENSE", "wuji-description/hand/body/urdf/*.urdf",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
@@ -33,6 +38,7 @@ pythonpath = ["src"]
 [tool.ruff]
 indent-width = 2
 src = ["src", "scripts", "tests"]
+extend-exclude = ["src/wuji_lfh/_vendor"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B"]

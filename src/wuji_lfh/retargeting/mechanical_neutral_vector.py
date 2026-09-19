@@ -12,7 +12,7 @@ from .neutral_pose import load_neutral_pose, vector_by_joint_name
 
 def create_retargeter(config_path: Path, hand_side: str):
     """Create an official Retargeter, with the local extension when requested."""
-    from wuji_retargeting import Retargeter
+    from wuji_lfh._vendor.wuji_retargeting import Retargeter
 
     config_path = Path(config_path).expanduser().resolve()
     with config_path.open("r", encoding="utf-8") as stream:
@@ -52,7 +52,7 @@ class MechanicalNeutralVectorOptimizer:
 
     def __new__(cls, config: dict):
         # Import lazily so extraction/test environments do not require Pinocchio.
-        from wuji_retargeting.opt.vector import VectorOptimizer
+        from wuji_lfh._vendor.wuji_retargeting.opt.vector import VectorOptimizer
 
         class _Implementation(VectorOptimizer):
             def __init__(self, implementation_config: dict):

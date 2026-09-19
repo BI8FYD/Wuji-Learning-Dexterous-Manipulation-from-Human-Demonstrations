@@ -1,4 +1,4 @@
-"""Convert a WrenchRetarget q_ik run into the DemoTrack reference contract.
+"""Convert a IK q_ik run into the DemoTrack reference contract.
 
 This module intentionally owns only the IK-output boundary.  Contact, Pre-touch,
 Upper and wrench optimization are not dependencies of DemoTrack.
@@ -19,14 +19,14 @@ from wuji_lfh.calibration import TAG_IN_PALM_POS, TAG_IN_PALM_QUAT_WXYZ
 from ..reference import JOINT_NAMES_20, SCHEMA_VERSION, sha256_file
 
 
-def _load_wrench_run(run_dir: Path):
+def _load_ik_run(run_dir: Path):
   manifest_path = run_dir / "run.json"
   q_path = run_dir / "q_ik.npz"
   if not manifest_path.is_file() or not q_path.is_file():
     raise FileNotFoundError("run must contain run.json and q_ik.npz")
   manifest = json.loads(manifest_path.read_text())
   if manifest.get("stages", {}).get("retarget") != "complete":
-    raise ValueError("DemoTrack requires a completed WrenchRetarget retarget stage")
+    raise ValueError("DemoTrack requires a completed IK retarget stage")
   with np.load(q_path, allow_pickle=False) as archive:
     q = np.asarray(archive["q_ik"], dtype=np.float64)
     fps = float(archive["fps"])
@@ -131,7 +131,7 @@ def _velocities(q, position, rotation: Rotation, dt: float):
   return qd, linear, angular
 
 
-def export_wrench_run(
+def export_ik_run(
   run_dir: str | Path,
   output: str | Path,
   *,
@@ -143,7 +143,7 @@ def export_wrench_run(
   """Export q_ik and synchronized object motion in the calibrated tag frame."""
   run_dir = Path(run_dir).expanduser().resolve()
   output = Path(output).expanduser().resolve()
-  manifest, q_path, q, fps, source_path, raw_path, start, stop = _load_wrench_run(run_dir)
+  manifest, q_path, q, fps, source_path, raw_path, start, stop = _load_ik_run(run_dir)
   if not np.isfinite(control_dt) or control_dt <= 0.0:
     raise ValueError("control_dt must be positive")
   with np.load(source_path, allow_pickle=True) as archive:
@@ -215,6 +215,3 @@ def export_wrench_run(
     source_hashes_json=np.asarray(json.dumps(hashes, sort_keys=True)),
   )
   return output
-
-# Stable alias for the standalone IK-only workflow.
-export_ik_run = export_wrench_run
